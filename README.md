@@ -122,29 +122,14 @@ from PIL import Image
 Image.open('runs/detect/exp/test.jpg')
 ```
 
-### 2)	Export model to ONNX
+### 2) Export model to ONNX
 ```bash
-python -W ignore export.py --weights ./ runs/train/yolov7_tiny_pothole_fixed_res/weights/best.pt --grid
+python -W ignore export.py --weights ./runs/train/yolov7_tiny_pothole_fixed_res/weights/best.pt --grid
 ```
 
-### 3)	Convert model to OpenVINO IR format
+### 3) Convert to OpenVINO IR format and run inference with OpenVINO runtime on dGPU
 ```bash
-from openvino.tools import mo
-from openvino.runtime import serialize
-
-model = mo.convert_model('model/best.onnx')
-# serialize model for saving IR
-serialize(model, 'model/best.xml')
-```
-
-### 4)	Run inference with OpenVINO runtime on dGPU
-```bash
-from openvino.runtime import Core
-core = Core()
-# read converted model
-model = core.read_model('model/best.xml')
-# load model on dGPU device
-compiled_model = core.compile_model(model, 'GPU.1')
+python run_openvino_inference.py
 ```
 The final inference result is like this
 
