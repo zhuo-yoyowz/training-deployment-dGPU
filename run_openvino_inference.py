@@ -123,8 +123,6 @@ COLORS = {name: [np.random.randint(0, 255) for _ in range(3)]
 
 boxes, image, input_shape = detect(compiled_model, 'test.jpg')
 image_with_boxes = draw_boxes(boxes[0], input_shape, image, NAMES, COLORS)
-# visualize results
-Image.fromarray(image_with_boxes)
 
 image_with_boxes = cv2.cvtColor(image_with_boxes, cv2.COLOR_RGB2BGR)
 cv2.imwrite("result.jpg", image_with_boxes)
