@@ -1,0 +1,91 @@
+diff --git a/train.py b/train.py
+index 86c7e48..21815b7 100644
+--- a/train.py
++++ b/train.py
+@@ -286,7 +286,9 @@ def train(hyp, opt, device, tb_writer=None):
+     model.nc = nc  # attach number of classes to model
+     model.hyp = hyp  # attach hyperparameters to model
+     model.gr = 1.0  # iou loss ratio (obj_loss = 1.0 or iou)
+-    model.class_weights = labels_to_class_weights(dataset.labels, nc).to(device) * nc  # attach class weights
++    #model.class_weights = labels_to_class_weights(dataset.labels, nc).to(device) * nc  # attach class weights
++    model.class_weights = labels_to_class_weights(dataset.labels, nc) * nc  # attach class weights
++    model.class_weights = model.class_weights.to(device)
+     model.names = names
+
+     # Start training
+diff --git a/utils/autoanchor.py b/utils/autoanchor.py
+index f491032..5bb3f1a 100644
+--- a/utils/autoanchor.py
++++ b/utils/autoanchor.py
+@@ -49,7 +49,10 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
+             print(f'{prefix}ERROR: {e}')
+         new_bpr = metric(anchors)[0]
+         if new_bpr > bpr:  # replace anchors
+-            anchors = torch.tensor(anchors, device=m.anchors.device).type_as(m.anchors)
++            print("*** m.anchars.device : {}".format(m.anchors.device))
++            #anchors = torch.tensor(anchors, device=m.anchors.device).type_as(m.anchors)
++            anchors = torch.tensor(anchors).type_as(m.anchors)
++            anchors = anchors.to(m.anchors.device)
+             m.anchor_grid[:] = anchors.clone().view_as(m.anchor_grid)  # for inference
+             check_anchor_order(m)
+             m.anchors[:] = anchors.clone().view_as(m.anchors) / m.stride.to(m.anchors.device).view(-1, 1, 1)  # loss
+diff --git a/utils/torch_utils.py b/utils/torch_utils.py
+index 1e631b5..5a93bd7 100644
+--- a/utils/torch_utils.py
++++ b/utils/torch_utils.py
+@@ -17,6 +17,8 @@ import torch.nn as nn
+ import torch.nn.functional as F
+ import torchvision
+
++import intel_extension_for_pytorch as ipex
++
+ try:
+     import thop  # for FLOPS computation
+ except ImportError:
+@@ -64,13 +66,17 @@ def select_device(device='', batch_size=None):
+     # device = 'cpu' or '0' or '0,1,2,3'
+     s = f'YOLOR 🚀 {git_describe() or date_modified()} torch {torch.__version__} '  # string
+     cpu = device.lower() == 'cpu'
++    xpu = device.lower() == 'xpu'
+     if cpu:
+         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
++    elif xpu:  # non-cpu device requested
++        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
++        assert torch.xpu.is_available(), f'XPU unavailable, invalid device {device} requested'  # check availability
+     elif device:  # non-cpu device requested
+         os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
+         assert torch.cuda.is_available(), f'CUDA unavailable, invalid device {device} requested'  # check availability
+
+-    cuda = not cpu and torch.cuda.is_available()
++    cuda = not cpu and not xpu and torch.cuda.is_available()
+     if cuda:
+         n = torch.cuda.device_count()
+         if n > 1 and batch_size:  # check that batch_size is compatible with device_count
+@@ -79,11 +85,19 @@ def select_device(device='', batch_size=None):
+         for i, d in enumerate(device.split(',') if device else range(n)):
+             p = torch.cuda.get_device_properties(i)
+             s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
++            s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
++    elif xpu:
++        s += 'XPU\n'
+     else:
+         s += 'CPU\n'
+
+     logger.info(s.encode().decode('ascii', 'ignore') if platform.system() == 'Windows' else s)  # emoji-safe
+-    return torch.device('cuda:0' if cuda else 'cpu')
++    if cuda:
++        return torch.device('cuda:0')
++    elif xpu:
++        return torch.device('xpu')
++    else:
++        return torch.device('cpu')
+
+
+ def time_synchronized():
+@@ -371,4 +385,4 @@ class TracedModel(nn.Module):
+     def forward(self, x, augment=False, profile=False):
+         out = self.model(x)
+         out = self.detect_layer(out)
+-        return out
+\ No newline at end of file
++        return out
