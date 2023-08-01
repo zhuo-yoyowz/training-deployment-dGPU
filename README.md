@@ -134,7 +134,7 @@ from openvino.runtime import serialize
 
 model = mo.convert_model('model/best.onnx')
 # serialize model for saving IR
-serialize(model, 'model_trained/best.xml')
+serialize(model, 'model/best.xml')
 ```
 
 ### 4)	Run inference with OpenVINO runtime on dGPU
