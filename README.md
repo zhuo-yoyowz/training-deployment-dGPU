@@ -6,6 +6,8 @@ A deep learning pipeline consists of model training with Intel® Extension for P
 
 ## Environment set up for model training
 
+After successfully installed dGPU driver on your machine, we could start setting up the environment for model training with the following installations.
+
 ### Install required library for training on dGPU with IPEX
 
 ```bash
