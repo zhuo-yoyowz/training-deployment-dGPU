@@ -125,12 +125,8 @@ After training is done, model weights with the best accuracy will be saved at "r
 python -W ignore detect.py --weights ./runs/train/yolov7_tiny_pothole_fixed_res/weights/best.pt --conf 0.25 --img-size 640 --source test.jpg
 ```
 
-The test result could be visulaized using
-```bash
-from PIL import Image
-# visualize prediction result
-Image.open('runs/detect/exp/test.jpg')
-```
+The test result is saved at 'runs/detect/exp/test.jpg'.
+
 
 ### 2) Export model to ONNX
 ```bash
