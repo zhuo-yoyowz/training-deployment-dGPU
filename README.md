@@ -58,6 +58,7 @@ python -m pip install torch==1.13.0a0+git6c9b55e torchvision==0.14.1a0 intel_ext
 After successful installation, you can run IPEX. Remember activation of oneAPI environment is required every time you open a new terminal, using the following command:
 ```bash
 source /opt/intel/oneapi/setvars.sh
+source ipex/bin/activate
 ```
 
 ### Install XPU manager for obtaining GPU running information
@@ -67,6 +68,9 @@ We could use XPU Manager to get GPU power, frequency, GPU memory used, compute e
 wget -c https://github.com/intel/xpumanager/releases/download/V1.2.13/xpumanager_1.2.13_20230629.055631.aeeedfec.u22.04_amd64.deb
 sudo apt install intel-gsc libmetee
 sudo dpkg -i xpumanager_1.2.13_20230629.055631.aeeedfec.u22.04_amd64.deb
+```
+You could use the following command to observe GPU related info with
+```bash
 xpumcli dump -d 0 -m 1,2,18,22,26,35
 ```
 
@@ -97,17 +101,17 @@ wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 
 Move the pothole.yaml file into "yolov7/data" folder
 ```bash
-mv pothole.yaml yolov7/data
+mv ../training-deployment-dGPU/pothole.yaml ./data
 ```
 
 Move the pothole-tiny.yaml into "yolov7/cfg/tranining" folder 
 ```bash
-mv yolov7-tiny.yaml yolov7/cfg/training
+mv ../training-deployment-dGPU/yolov7_pothole-tiny.yaml ./cfg/training
 ```
 
 Make the xpu.patch file effective using the following
 ```bash
-patch -p1 < yolov7_xpu.patch
+patch -p1 < ../training-deployment-dGPU/yolov7_xpu.patch
 ```
 
 ### 4) Perform model training
@@ -135,7 +139,7 @@ python -W ignore export.py --weights ./runs/train/yolov7_tiny_pothole_fixed_res/
 
 ### 3) Convert to OpenVINO IR format and run inference with OpenVINO runtime on dGPU
 ```bash
-python run_openvino_inference.py
+python ../training-deployment-dGPU/run_openvino_inference.py
 ```
 The final inference result is like this
 
